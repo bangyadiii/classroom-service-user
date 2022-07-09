@@ -15,7 +15,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
-app.use("/users", usersRouter);
+app.use("/auth", usersRouter);
 
 app.use((req, res, next) => {
     const error = new Error("Not found.");
@@ -23,12 +23,13 @@ app.use((req, res, next) => {
     next(error);
 });
 app.use((error, req, res, next) => {
+    console.log(error);
     const statusCode = error.status || 500;
     const message = error.message;
     const status = false;
 
     res.status(statusCode).json({
-        status: status,
+        success: status,
         message: message,
         data: null,
     });

@@ -1,13 +1,16 @@
+const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require("uuid");
+
 module.exports = (sequelize, DataTypes) => {
-    const Media = sequelize.define(
+    const User = sequelize.define(
         "User",
         {
             id: {
                 field: "_uid",
+                primaryKey: true,
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 allowNull: false,
-                primaryKey: true,
             },
             email: {
                 type: DataTypes.STRING,
@@ -33,6 +36,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM,
                 values: ["admin", "student"],
                 allowNull: false,
+                defaultValue: "student",
             },
             createdAt: {
                 field: "created_at",
@@ -52,18 +56,20 @@ module.exports = (sequelize, DataTypes) => {
             hooks: {
                 beforeCreate: async (user) => {
                     if (user.password) {
-                        const salt = await bcrypt.genSaltSync(25);
-                        user.password = bcrypt.hashSync(user.password, salt);
+                        user.password = await bcrypt.hash(user.password, 9);
                     }
                 },
                 beforeUpdate: async (user) => {
                     if (user.password) {
-                        const salt = await bcrypt.genSaltSync(25);
-                        user.password = bcrypt.hashSync(user.password, salt);
+                        user.password = await bcrypt.hash(user.password, 9);
                     }
                 },
             },
         }
     );
+
+    User.beforeCreate((user, _) => {
+        return (user.id = uuidv4());
+    });
     return User;
 };
