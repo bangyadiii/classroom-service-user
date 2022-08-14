@@ -15,7 +15,7 @@ module.exports = {
                 autoIncrement: true,
                 allowNull: false,
             },
-            token: {
+            refresh_token: {
                 type: Sequelize.TEXT,
                 allowNull: false,
             },

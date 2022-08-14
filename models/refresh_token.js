@@ -4,12 +4,12 @@ module.exports = (sequelize, DataTypes) => {
         {
             id: {
                 field: "token_id",
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 primaryKey: true,
+                autoIncrement: true,
             },
-            token: {
+            refresh_token: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },

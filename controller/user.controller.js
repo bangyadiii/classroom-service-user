@@ -71,7 +71,6 @@ module.exports = {
                 profession: req.body.profession || "student",
                 role: req.body.role || "student",
             };
-            console.log(data);
             const createdUser = await User.create({
                 name: req.body.name,
                 email: req.body.email,
@@ -83,7 +82,11 @@ module.exports = {
             res.status(200).json({
                 success: true,
                 message: "Register successfull",
-                data: createdUser,
+                data: {
+                    id: createdUser.id,
+                    name: createdUser.name,
+                    email: createdUser.email,
+                },
             });
         } catch (error) {
             console.log(error);
@@ -121,7 +124,7 @@ module.exports = {
                 req.body.password,
                 anyUserWithEmail.password
             );
-            if (isValidUser) {
+            if (!isValidUser) {
                 return res.status(400).json({
                     success: false,
                     message: "Wrong password.",
@@ -130,8 +133,18 @@ module.exports = {
             }
             res.status(200).json({
                 success: true,
-                message: "Wrong password.",
-                data: null,
+                message: "berhasil login",
+                data: {
+                    user: {
+                        id: anyUserWithEmail.id,
+                        name: anyUserWithEmail.name,
+                        email: anyUserWithEmail.email,
+                        avatar: anyUserWithEmail.avatar,
+                        profession: anyUserWithEmail.profession,
+                        role: anyUserWithEmail.role,
+                    },
+                    access_token: "",
+                },
             });
         } catch (error) {
             next(error);

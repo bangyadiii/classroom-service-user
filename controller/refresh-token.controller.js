@@ -6,7 +6,7 @@ async function create(req, res, next) {
     //
     const schema = {
         refresh_token: { type: "string", empty: false },
-        users_id: { type: "string", empty: false },
+        user_id: { type: "string", empty: false },
     };
     const validated = v.validate(req.body, schema);
     if (validated.length) {
@@ -30,7 +30,7 @@ async function create(req, res, next) {
         }
 
         const refresh_token_created = await RefreshToken.create({
-            token: req.body.refresh_token,
+            refresh_token: req.body.refresh_token,
             user_id: req.body.user_id,
         });
 
@@ -48,7 +48,7 @@ async function getToken(req, res, next) {
     try {
         const refToken = req.query.refresh_token;
         const anyToken = await RefreshToken.findOne({
-            where: { token: refToken },
+            where: { refresh_token: refToken },
         });
 
         if (!anyToken) {
@@ -65,7 +65,6 @@ async function getToken(req, res, next) {
         });
     } catch (error) {
         next(error);
-        f;
     }
 }
 
