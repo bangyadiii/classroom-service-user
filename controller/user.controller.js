@@ -1,4 +1,4 @@
-const { User } = require("../models");
+const { User, RefreshToken } = require("../models");
 const bcrypt = require("bcrypt");
 const Validator = require("fastest-validator");
 const v = new Validator();
@@ -12,7 +12,6 @@ module.exports = {
         };
 
         if (userIdParams.length) {
-            //
             sqlAttribute.where = {
                 id: userIdParams,
             };
@@ -25,6 +24,26 @@ module.exports = {
                 success: true,
                 message: "Get data successfully",
                 data: userList,
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    getUser: async (req, res, next) => {
+        try {
+            const id = req.params.id;
+            const user = await User.findByPk(id);
+
+            if (!user) {
+                return res
+                    .status(400)
+                    .json({ status: "error", message: "User not found." });
+            }
+            res.status(200).json({
+                status: "success",
+                message: "Get user successfully",
+                data: { user: user },
             });
         } catch (error) {
             next(error);
@@ -203,15 +222,12 @@ module.exports = {
             next(error);
         }
     },
-    refresh: async (req, res, next) => {
-        //
-    },
 
     logout: async (req, res, next) => {
         try {
-            const user_id = req.body.user_id;
+            const id = req.body.user_id;
 
-            const user = User.findByPk(user_id);
+            const user = User.findByPk(id);
 
             if (!user) {
                 return res.status(400).json({
@@ -222,7 +238,7 @@ module.exports = {
             }
 
             await RefreshToken.destroy({
-                where: { user_id },
+                where: { user_id: id },
             });
         } catch (error) {
             next(error);
