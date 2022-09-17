@@ -6,7 +6,7 @@ async function create(req, res, next) {
     //
     const schema = {
         refresh_token: { type: "string", empty: false },
-        user_id: { type: "integer", empty: false },
+        user_id: { type: "number", empty: false },
     };
     const validated = v.validate(req.body, schema);
     if (validated.length) {

@@ -1,4 +1,5 @@
 const { User, RefreshToken } = require("../models");
+
 const bcrypt = require("bcrypt");
 const Validator = require("fastest-validator");
 const v = new Validator();
@@ -115,10 +116,10 @@ module.exports = {
     login: async (req, res, next) => {
         const schema = {
             email: { type: "email", empty: false },
-            password: { type: "string" },
+            password: { type: "string", empty: false },
         };
         const validated = v.validate(req.body, schema);
-        if (validated.length) {
+        if (validated.length > 0) {
             return res.status(400).json({
                 success: false,
                 message: "Input invalid.",
@@ -150,7 +151,7 @@ module.exports = {
                     data: null,
                 });
             }
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 message: "berhasil login",
                 data: {
