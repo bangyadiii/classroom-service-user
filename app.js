@@ -1,12 +1,14 @@
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
+const { ERROR } = require("./helpers/ResponseFormatter");
 
-var tokenRouter = require("./routes/refresh_token");
-var usersRouter = require("./routes/users");
+const tokenRouter = require("./routes/refresh_token");
+const usersRouter = require("./routes/users");
 
-var app = express();
+const app = express();
+
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -21,18 +23,13 @@ app.use((req, res, next) => {
     error.status = 404;
     next(error);
 });
+//add default error handling
 app.use((error, req, res, next) => {
-    console.log(error);
-    const statusCode = error.status || 500;
+    //
+    const statusCode = error.status ?? 500;
     const message = error.message;
-    const status = false;
-
-    res.status(statusCode).json({
-        success: status,
-        message: message,
-        data: null,
-        error: error,
-    });
+    const errors = error.data ?? null;
+    return ERROR(res, statusCode, message, errors);
 });
 
 module.exports = app;

@@ -1,4 +1,5 @@
 const { User, RefreshToken } = require("../models");
+const { ERROR, SUCCESS } = require("../helpers/ResponseFormatter");
 
 const bcrypt = require("bcrypt");
 const Validator = require("fastest-validator");
@@ -18,7 +19,6 @@ module.exports = {
             };
         }
         try {
-            console.log(sqlAttribute);
             const userList = await User.findAll(sqlAttribute);
 
             res.status(200).json({
@@ -63,12 +63,7 @@ module.exports = {
         };
         const validated = v.validate(req.body, schema);
         if (validated.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+            return ERROR(res, 422, "Unproccessible Request", validated);
         }
         try {
             const anyUserWithEmail = await User.findOne({
@@ -76,21 +71,14 @@ module.exports = {
             });
 
             if (anyUserWithEmail !== null) {
-                return res.status(409).json({
-                    success: false,
-                    message: "This email already exist.",
-                    data: null,
-                });
+                return ERROR(
+                    res,
+                    409,
+                    "Confict",
+                    "This email address has been taken"
+                );
             }
 
-            const data = {
-                name: req.body.name,
-                email: req.body.email,
-                password: req.body.password,
-                avatar: req.body.avatar || null,
-                profession: req.body.profession || "student",
-                role: req.body.role || "student",
-            };
             const createdUser = await User.create({
                 name: req.body.name,
                 email: req.body.email,
@@ -99,15 +87,8 @@ module.exports = {
                 profession: req.body.profession || "student",
                 role: req.body.role || "student",
             });
-            res.status(200).json({
-                success: true,
-                message: "Register successfull",
-                data: {
-                    id: createdUser.id,
-                    name: createdUser.name,
-                    email: createdUser.email,
-                },
-            });
+
+            return SUCCESS(res, 200, "OK", createdUser);
         } catch (error) {
             console.log(error);
             next(error);
