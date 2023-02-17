@@ -79,6 +79,7 @@ module.exports = {
                 role: req.body.role || "student",
             });
             const userResp = {
+                id: createdUser.id,
                 name: createdUser.name,
                 email: createdUser.email,
                 avatar: createdUser.avatar,
