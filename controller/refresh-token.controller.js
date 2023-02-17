@@ -19,14 +19,17 @@ async function create(req, res) {
         if (!user) {
             return ERROR(res, 404, "NOT FOUND", "User not found");
         }
-
         const payload = await RefreshToken.create({
             refresh_token: req.body.refresh_token,
             user_id: req.body.user_id,
         });
+        if (!payload) {
+            return ERROR(res, 400, "", payload);
+        }
 
         return SUCCESS(res, 200, "OK", payload);
     } catch (error) {
+        console.log(error);
         return ERROR(res, error.status ?? 500, error.message, error);
     }
 }
@@ -39,7 +42,7 @@ async function getToken(req, res) {
         });
 
         if (!anyToken) {
-            return ERROR(res, 404, "NOT FOUND", "Token Not Found.");
+            return ERROR(res, 404, "NOT FOUND", "Token Not  .. Found.");
         }
 
         return SUCCESS(res, 200, "OK", payload);

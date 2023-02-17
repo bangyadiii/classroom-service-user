@@ -10,7 +10,7 @@ module.exports = {
         const userIdParams = req.query.user_ids || [];
 
         const sqlAttribute = {
-            attributes: ["id", "name", "email", "avatar", "role", "profession"],
+            attributes: ["id", "name", "email", "avatar", "profession"],
         };
 
         if (userIdParams.length) {
@@ -21,11 +21,7 @@ module.exports = {
         try {
             const userList = await User.findAll(sqlAttribute);
 
-            res.status(200).json({
-                success: true,
-                message: "Get data successfully",
-                data: userList,
-            });
+            return SUCCESS(res, 200, "Get data successfully", userList);
         } catch (error) {
             next(error);
         }
@@ -37,15 +33,10 @@ module.exports = {
             const user = await User.findByPk(id);
 
             if (!user) {
-                return res
-                    .status(400)
-                    .json({ status: "error", message: "User not found." });
+                return ERROR(res, 400, "Bad Request", "User not found");
             }
-            res.status(200).json({
-                status: "success",
-                message: "Get user successfully",
-                data: { user: user },
-            });
+
+            return SUCCESS(res, 200, "Get data successfully", { user: user });
         } catch (error) {
             next(error);
         }
@@ -66,11 +57,11 @@ module.exports = {
             return ERROR(res, 422, "Unproccessible Request", validated);
         }
         try {
-            const anyUserWithEmail = await User.findOne({
+            const updatedUser = await User.findOne({
                 where: { email: req.body.email },
             });
 
-            if (anyUserWithEmail !== null) {
+            if (updatedUser !== null) {
                 return ERROR(
                     res,
                     409,
@@ -87,13 +78,20 @@ module.exports = {
                 profession: req.body.profession || "student",
                 role: req.body.role || "student",
             });
+            const userResp = {
+                name: createdUser.name,
+                email: createdUser.email,
+                avatar: createdUser.avatar,
+                profession: createdUser.profession,
+            };
 
-            return SUCCESS(res, 200, "OK", createdUser);
+            return SUCCESS(res, 200, "OK", userResp);
         } catch (error) {
             console.log(error);
             next(error);
         }
     },
+
     login: async (req, res, next) => {
         const schema = {
             email: { type: "email", empty: false },
@@ -101,51 +99,40 @@ module.exports = {
         };
         const validated = v.validate(req.body, schema);
         if (validated.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+            return ERROR(res, 400, "Bad Request", null, validated);
         }
 
         try {
-            const anyUserWithEmail = await User.findOne({
+            const updatedUser = await User.findOne({
                 where: { email: req.body.email },
             });
 
-            if (anyUserWithEmail === null) {
-                return res.status(400).json({
-                    success: false,
-                    message: "This email doesn't match in our records",
-                    data: null,
-                });
+            if (updatedUser === null) {
+                return ERROR(
+                    res,
+                    400,
+                    "This email doesn't match in our records",
+                    null
+                );
             }
             const isValidUser = await bcrypt.compare(
                 req.body.password,
-                anyUserWithEmail.password
+                updatedUser.password
             );
             if (!isValidUser) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Wrong password.",
-                    data: null,
-                });
+                return ERROR(res, 400, "Wrong password", null);
             }
-            return res.status(200).json({
-                success: true,
-                message: "berhasil login",
-                data: {
-                    user: {
-                        id: anyUserWithEmail.id,
-                        name: anyUserWithEmail.name,
-                        email: anyUserWithEmail.email,
-                        avatar: anyUserWithEmail.avatar,
-                        profession: anyUserWithEmail.profession,
-                        role: anyUserWithEmail.role,
-                    },
-                    access_token: "",
+
+            return SUCCESS(res, 200, "OK", {
+                user: {
+                    id: updatedUser.id,
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    avatar: updatedUser.avatar,
+                    profession: updatedUser.profession,
+                    role: updatedUser.role,
                 },
+                access_token: "",
             });
         } catch (error) {
             next(error);
@@ -162,12 +149,7 @@ module.exports = {
         };
         const validated = v.validate(req.body, schema);
         if (validated.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+            return ERROR(res, 400, "Bad Request", validated);
         }
         try {
             const id =
@@ -179,11 +161,7 @@ module.exports = {
             const anyUser = await User.findByPk(id);
 
             if (anyUser === null) {
-                return res.status(409).json({
-                    success: false,
-                    message: "Account doesn't exist.",
-                    data: null,
-                });
+                return ERROR(res, 400, "Account doesn't exist.", validated);
             }
 
             const data = {
@@ -195,10 +173,15 @@ module.exports = {
                 role: req.body.role || "student",
             };
             const updatedUser = await anyUser.update(data);
-            res.status(200).json({
-                success: true,
-                message: "Update account successfully.",
-                data: updatedUser,
+
+            return SUCCESS(res, 200, "Update account successful", {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                profession: updatedUser.profession,
+                role: updatedUser.role,
+                updated_at: updatedUser.updated_at,
             });
         } catch (error) {
             next(error);
@@ -212,16 +195,13 @@ module.exports = {
             const user = User.findByPk(id);
 
             if (!user) {
-                return res.status(400).json({
-                    success: false,
-                    message: "User not found.",
-                    data: null,
-                });
+                return ERROR(res, 400, "User not found");
             }
 
             await RefreshToken.destroy({
                 where: { user_id: id },
             });
+            return SUCCESS(res, 200, "Logout Successfully");
         } catch (error) {
             next(error);
         }
