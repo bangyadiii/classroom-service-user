@@ -36,7 +36,15 @@ module.exports = {
                 return ERROR(res, 400, "Bad Request", "User not found");
             }
 
-            return SUCCESS(res, 200, "Get data successfully", { user: user });
+            const userResp = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+                profession: user.profession,
+            };
+
+            return SUCCESS(res, 200, "Get data successfully", userResp);
         } catch (error) {
             next(error);
         }
