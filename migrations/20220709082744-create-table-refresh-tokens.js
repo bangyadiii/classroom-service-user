@@ -15,12 +15,12 @@ module.exports = {
                 autoIncrement: true,
                 allowNull: false,
             },
-            token: {
+            refresh_token: {
                 type: Sequelize.TEXT,
                 allowNull: false,
             },
             user_id: {
-                type: Sequelize.UUID,
+                type: Sequelize.INTEGER,
                 allowNull: false,
             },
             created_at: {

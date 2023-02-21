@@ -1,4 +1,6 @@
-const { User } = require("../models");
+const { User, RefreshToken } = require("../models");
+const { ERROR, SUCCESS } = require("../helpers/ResponseFormatter");
+
 const bcrypt = require("bcrypt");
 const Validator = require("fastest-validator");
 const v = new Validator();
@@ -8,24 +10,41 @@ module.exports = {
         const userIdParams = req.query.user_ids || [];
 
         const sqlAttribute = {
-            attributes: ["id", "name", "email", "avatar", "role", "profession"],
+            attributes: ["id", "name", "email", "avatar", "profession"],
         };
 
         if (userIdParams.length) {
-            //
             sqlAttribute.where = {
                 id: userIdParams,
             };
         }
         try {
-            console.log(sqlAttribute);
             const userList = await User.findAll(sqlAttribute);
 
-            res.status(200).json({
-                success: true,
-                message: "Get data successfully",
-                data: userList,
-            });
+            return SUCCESS(res, 200, "Get data successfully", userList);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    getUser: async (req, res, next) => {
+        try {
+            const id = req.params.id;
+            const user = await User.findByPk(id);
+
+            if (!user) {
+                return ERROR(res, 400, "Bad Request", "User not found");
+            }
+
+            const userResp = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+                profession: user.profession,
+            };
+
+            return SUCCESS(res, 200, "Get data successfully", userResp);
         } catch (error) {
             next(error);
         }
@@ -43,35 +62,22 @@ module.exports = {
         };
         const validated = v.validate(req.body, schema);
         if (validated.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+            return ERROR(res, 422, "Unproccessible Request", validated);
         }
         try {
-            const anyUserWithEmail = await User.findOne({
+            const updatedUser = await User.findOne({
                 where: { email: req.body.email },
             });
 
-            if (anyUserWithEmail !== null) {
-                return res.status(409).json({
-                    success: false,
-                    message: "This email already exist.",
-                    data: null,
-                });
+            if (updatedUser !== null) {
+                return ERROR(
+                    res,
+                    409,
+                    "Confict",
+                    "This email address has been taken"
+                );
             }
 
-            const data = {
-                name: req.body.name,
-                email: req.body.email,
-                password: req.body.password,
-                avatar: req.body.avatar || null,
-                profession: req.body.profession || "student",
-                role: req.body.role || "student",
-            };
-            console.log(data);
             const createdUser = await User.create({
                 name: req.body.name,
                 email: req.body.email,
@@ -80,58 +86,62 @@ module.exports = {
                 profession: req.body.profession || "student",
                 role: req.body.role || "student",
             });
-            res.status(200).json({
-                success: true,
-                message: "Register successfull",
-                data: createdUser,
-            });
+            const userResp = {
+                id: createdUser.id,
+                name: createdUser.name,
+                email: createdUser.email,
+                avatar: createdUser.avatar,
+                profession: createdUser.profession,
+            };
+
+            return SUCCESS(res, 200, "OK", userResp);
         } catch (error) {
             console.log(error);
             next(error);
         }
     },
+
     login: async (req, res, next) => {
         const schema = {
             email: { type: "email", empty: false },
-            password: { type: "string" },
+            password: { type: "string", empty: false },
         };
         const validated = v.validate(req.body, schema);
-        if (validated.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+        if (validated.length > 0) {
+            return ERROR(res, 400, "Bad Request", null, validated);
         }
 
         try {
-            const anyUserWithEmail = await User.findOne({
+            const updatedUser = await User.findOne({
                 where: { email: req.body.email },
             });
 
-            if (anyUserWithEmail === null) {
-                return res.status(400).json({
-                    success: false,
-                    message: "This email doesn't match in our records",
-                    data: null,
-                });
+            if (updatedUser === null) {
+                return ERROR(
+                    res,
+                    400,
+                    "This email doesn't match in our records",
+                    null
+                );
             }
             const isValidUser = await bcrypt.compare(
                 req.body.password,
-                anyUserWithEmail.password
+                updatedUser.password
             );
-            if (isValidUser) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Wrong password.",
-                    data: null,
-                });
+            if (!isValidUser) {
+                return ERROR(res, 400, "Wrong password", null);
             }
-            res.status(200).json({
-                success: true,
-                message: "Wrong password.",
-                data: null,
+
+            return SUCCESS(res, 200, "OK", {
+                user: {
+                    id: updatedUser.id,
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    avatar: updatedUser.avatar,
+                    profession: updatedUser.profession,
+                    role: updatedUser.role,
+                },
+                access_token: "",
             });
         } catch (error) {
             next(error);
@@ -148,12 +158,7 @@ module.exports = {
         };
         const validated = v.validate(req.body, schema);
         if (validated.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Input invalid.",
-                data: null,
-                error: validated,
-            });
+            return ERROR(res, 400, "Bad Request", validated);
         }
         try {
             const id =
@@ -165,11 +170,7 @@ module.exports = {
             const anyUser = await User.findByPk(id);
 
             if (anyUser === null) {
-                return res.status(409).json({
-                    success: false,
-                    message: "Account doesn't exist.",
-                    data: null,
-                });
+                return ERROR(res, 400, "Account doesn't exist.", validated);
             }
 
             const data = {
@@ -181,36 +182,35 @@ module.exports = {
                 role: req.body.role || "student",
             };
             const updatedUser = await anyUser.update(data);
-            res.status(200).json({
-                success: true,
-                message: "Update account successfully.",
-                data: updatedUser,
+
+            return SUCCESS(res, 200, "Update account successful", {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+                profession: updatedUser.profession,
+                role: updatedUser.role,
+                updated_at: updatedUser.updated_at,
             });
         } catch (error) {
             next(error);
         }
     },
-    refresh: async (req, res, next) => {
-        //
-    },
 
     logout: async (req, res, next) => {
         try {
-            const user_id = req.body.user_id;
+            const id = req.body.user_id;
 
-            const user = User.findByPk(user_id);
+            const user = User.findByPk(id);
 
             if (!user) {
-                return res.status(400).json({
-                    success: false,
-                    message: "User not found.",
-                    data: null,
-                });
+                return ERROR(res, 400, "User not found");
             }
 
             await RefreshToken.destroy({
-                where: { user_id },
+                where: { user_id: id },
             });
+            return SUCCESS(res, 200, "Logout Successfully");
         } catch (error) {
             next(error);
         }

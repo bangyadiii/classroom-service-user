@@ -7,9 +7,9 @@ module.exports = (sequelize, DataTypes) => {
         {
             id: {
                 field: "_uid",
+                autoIncrement: true,
+                type: DataTypes.INTEGER,
                 primaryKey: true,
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
                 allowNull: false,
             },
             email: {
@@ -68,8 +68,5 @@ module.exports = (sequelize, DataTypes) => {
         }
     );
 
-    User.beforeCreate((user, _) => {
-        return (user.id = uuidv4());
-    });
     return User;
 };

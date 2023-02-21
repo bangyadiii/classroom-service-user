@@ -1,71 +1,53 @@
 const { User, RefreshToken } = require("../models");
 const Validator = require("fastest-validator");
 const v = new Validator();
+const { ERROR, SUCCESS } = require("../helpers/ResponseFormatter");
 
-async function create(req, res, next) {
+async function create(req, res) {
     //
     const schema = {
         refresh_token: { type: "string", empty: false },
-        users_id: { type: "string", empty: false },
+        user_id: { type: "number", empty: false },
     };
     const validated = v.validate(req.body, schema);
     if (validated.length) {
-        //
-        return res.status(400).json({
-            success: false,
-            message: "Input invalid.",
-            data: null,
-            error: validated,
-        });
+        return ERROR(res, 422, "Unproccessible Request", validated);
     }
 
     try {
         const user = await User.findByPk(req.body.user_id);
         if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: "User not found.",
-                data: null,
-            });
+            return ERROR(res, 404, "NOT FOUND", "User not found");
         }
-
-        const refresh_token_created = await RefreshToken.create({
-            token: req.body.refresh_token,
+        const payload = await RefreshToken.create({
+            refresh_token: req.body.refresh_token,
             user_id: req.body.user_id,
         });
+        if (!payload) {
+            return ERROR(res, 400, "", payload);
+        }
 
-        res.status(200).json({
-            success: true,
-            message: "Token created successfully.",
-            data: refresh_token_created,
-        });
+        return SUCCESS(res, 200, "OK", payload);
     } catch (error) {
-        next(error);
+        console.log(error);
+        return ERROR(res, error.status ?? 500, error.message, error);
     }
 }
 
-async function getToken(req, res, next) {
+async function getToken(req, res) {
     try {
         const refToken = req.query.refresh_token;
         const anyToken = await RefreshToken.findOne({
-            where: { token: refToken },
+            where: { refresh_token: refToken },
         });
 
         if (!anyToken) {
-            return res.status(400).json({
-                success: false,
-                message: "Token not found.",
-            });
+            return ERROR(res, 404, "NOT FOUND", "Token Not  .. Found.");
         }
 
-        return res.status(200).json({
-            success: true,
-            message: "Get token successfull.",
-            data: { anyToken },
-        });
+        return SUCCESS(res, 200, "OK", payload);
     } catch (error) {
-        next(error);
-        f;
+        return ERROR(res, error.status ?? 500, error.message, error.message);
     }
 }
 
